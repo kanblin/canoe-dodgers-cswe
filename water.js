@@ -24,18 +24,7 @@ let ship = {
 let shipImg;
 let shipVelocityX = tileSize; //ship moving speed
 
-//rocks
-let rockArray = [];
-let rockWidth = tileSize * 2;
-let rockHeight = tileSize;
-let rockX = tileSize;
-let rockY = tileSize;
-let rockImg;
 
-// let rockRows = ;
-// let rockColumns = 3;
-let rockCount = 0; //number of rocks to defeat
-let rockVelocityY = 1; //rock moving speed
 
 let score = 0;
 let gameOver = false;
@@ -45,10 +34,6 @@ window.onload = function () {
     board.width = boardWidth;
     board.height = boardHeight;
     context = board.getContext("2d"); //used for drawing on the board
-
-    //draw initial ship
-    // context.fillStyle="green";
-    // context.fillRect(ship.x, ship.y, ship.width, ship.height);
 
     //load images
     shipImg = new Image();
@@ -62,6 +47,7 @@ window.onload = function () {
     createRocks();
 
     requestAnimationFrame(update);
+    setInterval(createRocks, 6500); //every 1.5 seconds
     document.addEventListener("keydown", moveShip);
     document.addEventListener("keyup", shoot);
 };
@@ -89,10 +75,13 @@ function update() {
 
             context.drawImage(rockImg, rock.x, rock.y, rock.width, rock.height);
 
-            if (rock.y >= ship.y) {
-                rock.alive = false;
-                createRocks();
+            if (detectCollision(ship, rock)) {
+                gameOver = true;
             }
+            // if (rock.y >= ship.y) {
+            //     rock.alive = false;
+            //     createRocks();
+            // }
         }
     }
 
@@ -123,31 +112,69 @@ function getRandomArbitrary(min, max) {
     return Math.random() * (max - min) + min;
 }
 
+//rocks
+// let rockArray = [];
+// let rockWidth = tileSize * 2;
+// let rockWidth = boardwidth / 3 - tileSize;
+// let rockHeight = tileSize;
+// let rockX = tileSize;
+// let rockY = tileSize;
+// let rockImg;
+
+// let rockRows = ;
+// let rockColumns = 3;
+let rockCount = 0; //number of rocks to defeat
+let rockVelocityY = 1; //rock moving speed
+
 function createRocks() {
-    let rockStartColumns = getRandomInt(columns / 3);
-    let rockEndColumns = getRandomArbitrary(rockStartColumns + 1, columns);
-    let rockRows = getRandomInt(columns / 5);
-    for (let c = rockStartColumns; c < rockEndColumns; c++) {
-        for (let r = 0; r < rockRows; r++) {
+    if (gameOver) {
+        return;
+    }
+    rockArray = []; // Clear the existing rocks
+
+
+    let rockWidth = Math.floor(boardWidth / 3);  //I figure if we use 3 cols this will scale better
+    let rockHeight = tileSize*3;
+
+    // Randomly generate boolean array prepopulated with values tehen check if rocks are at a feasible position
+    let rocksInRow = [Math.random() < 0.5, Math.random() < 0.5, Math.random() < 0.5];
+
+    if (rocksInRow.every(position => position)) {
+        rocksInRow[Math.floor(Math.random() * rocksInRow.length)] = false;
+    }
+    if (rocksInRow.every(position => !position)) {
+        rocksInRow[Math.floor(Math.random() * rocksInRow.length)] = true;
+    }
+
+    // Loop to create rocks
+    for (let c = 0; c < rocksInRow.length; c++) {
+        if (rocksInRow[c]) {
+            // Calculate the x-coordinate of the rock
+            let rockX = c * rockWidth;
+            let rockY = getRandomInt(rows / 5) * tileSize;
+
             let rock = {
                 img: rockImg,
-                x: rockX + c * rockWidth,
-                y: rockY + r * rockHeight,
+                x: rockX,
+                y: rockY,
                 width: rockWidth,
                 height: rockHeight,
                 alive: true,
             };
+
             rockArray.push(rock);
         }
     }
+
     rockCount = rockArray.length;
 }
+
 
 function detectCollision(a, b) {
     return (
         a.x < b.x + b.width && //a's top left corner doesn't reach b's top right corner
         a.x + a.width > b.x && //a's top right corner passes b's top left corner
         a.y < b.y + b.height && //a's top left corner doesn't reach b's bottom left corner
-        a.y + a.height > b.y
-    ); //a's bottom left corner passes b's top left corner
+        a.y + a.height > b.y    //a's bottom left corner passes b's top left corner
+    ); 
 }
